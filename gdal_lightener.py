@@ -28,7 +28,9 @@ def usage():
           'where\n'
           'amount is the amount of lightening to apply [0-255]\n'
           'src_color is a RGB or RGBA dataset\n',
-          'dst_color will be a RGB or RGBA dataset\n')
+          'dst_color will be a RGB or RGBA dataset\n'
+          '\n'
+          'Use a lower amount to get a darker image (closer to original)')
     sys.exit(1)
 
 
@@ -84,6 +86,11 @@ def lighten(theSourceFilename,
 
     myXSize = myRedBand.XSize
     myYSize = myRedBand.YSize
+
+    # Set up a numpy vectorize function that will iteratively
+    # apply the function to each numpy array element
+    myFunction = numpy.vectorize(screen)
+
     #loop over lines to apply colorshade
     for myRow in range(myYSize):
         #load RGB and colorshade arrays
@@ -98,9 +105,6 @@ def lighten(theSourceFilename,
             myAlphaScanline = myAlphaBand.ReadAsArray(
                                             0, myRow, myXSize, 1, myXSize, 1)
 
-        # Set up a numpy vectorize function that will iteratively
-        # apply the function to each numpy array element
-        myFunction = numpy.vectorize(screen)
         # Now apply it to our r,g,b bands
         myRedScanline = myFunction(myRedScanline, theAmount)
         myGreenScanline = myFunction(myGreenScanline, theAmount)
@@ -114,30 +118,12 @@ def lighten(theSourceFilename,
         myOutputBand = myOutputDataset.GetRasterBand(3)
         myOutputBand.WriteArray(myRedScanline, 0, myRow)
         if myAlphaBand is not None:
+            myOutputBand = myOutputDataset.GetRasterBand(4)
             myOutputBand.WriteArray(myAlphaScanline, 0, myRow)
 
         #update progress line
         if not theQuietFlag:
             gdal.TermProgress_nocb((float(myRow + 1) / myYSize))
-
-
-def processScanline(theScanline, theAmount=100):
-    """Process all pixels in the supplied array using 'screen'
-    Input
-
-        * theScanline - an array of values each in range [0-255]
-        * theAmount - intensity of lightening to apply [0-255]
-
-    Output
-        An array of scaled values each in the range [0-255]
-    Exception
-        none
-    """
-    #print theScanline
-    for myColumn in range(len(theScanline)):
-        theScanline[myColumn] = screen(theScanline[myColumn], theAmount)
-    #print theScanline
-    return theScanline
 
 
 def screen(thePixelValue, theAmount=100):

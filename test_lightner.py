@@ -6,7 +6,7 @@ Created on 07 Feb 2012
 import os
 import unittest
 import numpy
-from gdal_lightener import (lighten, processScanline, screen)
+from gdal_lightener import (lighten, screen)
 
 
 class Test(unittest.TestCase):
@@ -24,20 +24,6 @@ class Test(unittest.TestCase):
         myOutfile = os.path.join(myRoot, 'test_out.tif')
         myAmount = 100
         lighten(myInfile, myOutfile, myAmount)
-
-    def testProcessScanline(self):
-        """Test the processScanline function works"""
-        myArray = [255, 127, 1]
-        myAmount = 100
-        myResult = processScanline(myArray, myAmount)
-        print myResult
-        assert str(myResult) == '[255, 178, 101]'
-        #actual data from our test raster...
-        myArray = [199, 155, 166, 223, 161, 138, 214, 224, 0, 0, 0, 0, 0, 236]
-        myResult = processScanline(myArray, myAmount)
-        print myResult
-        assert (str(myResult) == ('[221, 195, 201, 236, 198, 184, 231,'
-                             ' 237, 100, 100, 100, 100, 100, 244]'))
 
     def testScreen(self):
         """Test the screen function works"""
