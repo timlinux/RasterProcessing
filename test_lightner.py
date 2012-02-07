@@ -5,6 +5,7 @@ Created on 07 Feb 2012
 '''
 import os
 import unittest
+import numpy
 from gdal_lightener import (lighten, processScanline, screen)
 
 
@@ -22,18 +23,18 @@ class Test(unittest.TestCase):
         myInfile = os.path.join(myRoot, 'test_in.tif')
         myOutfile = os.path.join(myRoot, 'test_out.tif')
         myAmount = 100
-        lighten(myAmount, myInfile, myOutfile)
+        lighten(myInfile, myOutfile, myAmount)
 
     def testProcessScanline(self):
         """Test the processScanline function works"""
         myArray = [255, 127, 1]
         myAmount = 100
-        myResult = processScanline(myAmount, myArray)
+        myResult = processScanline(myArray, myAmount)
         print myResult
         assert str(myResult) == '[255, 178, 101]'
         #actual data from our test raster...
         myArray = [199, 155, 166, 223, 161, 138, 214, 224, 0, 0, 0, 0, 0, 236]
-        myResult = processScanline(myAmount, myArray)
+        myResult = processScanline(myArray, myAmount)
         print myResult
         assert (str(myResult) == ('[221, 195, 201, 236, 198, 184, 231,'
                              ' 237, 100, 100, 100, 100, 100, 244]'))
@@ -42,9 +43,17 @@ class Test(unittest.TestCase):
         """Test the screen function works"""
         myValue = 127
         myAmount = 100
-        myResult = screen(myAmount, myValue)
+        myResult = screen(myValue, myAmount)
         print myResult
         assert myResult == 178
+
+    def testVectorize(self):
+        """Test that screen works as a numpy vecorize function"""
+        myArray = numpy.array([[0, 1, 2, 127, 255]])
+        myFunction = numpy.vectorize(screen)
+        myResult = myFunction(myArray, 100)
+        assert str(myResult) == '[[100 101 102 178 255]]'
+
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

@@ -32,20 +32,22 @@ def usage():
     sys.exit(1)
 
 
-def lighten(theAmount,
-            theSourceFilename,
+def lighten(theSourceFilename,
             theDestinationFilename,
+            theAmount=100,
             theFileFormat='GTiff',
             theQuietFlag=False):
     """Function to lighten the pixel intensity of a raster in
     order to give it a 'washed out' appearance.
     Input
 
-        * theAmount - intensity of lightening to apply [0-255]
         * theDestinationFilname - output filename
-        * theSourceFileName - input filenam
+        * theSourceFileName - input filename
+        * theAmount - intensity of lightening to apply [0-255]
+                    Defaults to 100
         * theFileFormat - Output format (defaults to geotiff)
         * theQuietFlag - whether to show progress in terminal
+                    Defaults to False
 
     Output
         Writes output file to disk, returns nothing
@@ -95,18 +97,14 @@ def lighten(theAmount,
         if myAlphaBand is not None:
             myAlphaScanline = myAlphaBand.ReadAsArray(
                                             0, myRow, myXSize, 1, myXSize, 1)
-        """ .. note:: A scanline will be a three dimensional array like this
-                      [[0,1,2,3]]
-                      So we unpack the inner array and
-                      then repack it into an outer array when we are done.
-        """
-        myRedScanline = numpy.array([processScanline(
-                                            theAmount, myRedScanline[0])])
-        myGreenScanline = numpy.array([processScanline(
-                                            theAmount, myGreenScanline[0])])
-        #print 'Before:', myBlueScanline
-        myBlueScanline = numpy.array([processScanline(
-                                            theAmount, myBlueScanline[0])])
+
+        # Set up a numpy vectorize function that will iteratively
+        # apply the function to each numpy array element
+        myFunction = numpy.vectorize(screen)
+        # Now apply it to our r,g,b bands
+        myRedScanline = myFunction(myRedScanline, theAmount)
+        myGreenScanline = myFunction(myGreenScanline, theAmount)
+        myBlueScanline = myFunction(myBlueScanline, theAmount)
         #print 'After:', myBlueScanline
         #write out new RGB bands to output one band at a time
         myOutputBand = myOutputDataset.GetRasterBand(1)
@@ -123,12 +121,12 @@ def lighten(theAmount,
             gdal.TermProgress_nocb((float(myRow + 1) / myYSize))
 
 
-def processScanline(theAmount, theScanline):
+def processScanline(theScanline, theAmount=100):
     """Process all pixels in the supplied array using 'screen'
     Input
 
-        * theAmount - intensity of lightening to apply [0-255]
         * theScanline - an array of values each in range [0-255]
+        * theAmount - intensity of lightening to apply [0-255]
 
     Output
         An array of scaled values each in the range [0-255]
@@ -137,18 +135,19 @@ def processScanline(theAmount, theScanline):
     """
     #print theScanline
     for myColumn in range(len(theScanline)):
-        theScanline[myColumn] = screen(theAmount, theScanline[myColumn])
+        theScanline[myColumn] = screen(theScanline[myColumn], theAmount)
     #print theScanline
     return theScanline
 
 
-def screen(theAmount, thePixelValue):
+def screen(thePixelValue, theAmount=100):
     """An implementation of the 'screen' image processing procedure.
     .. see:: http://en.wikipedia.org/wiki/Blend_modes#Screen
     Input
 
-        * theAmount - intensity of lightening to apply [0-255]
         * thePixelValue - a value in the range [0-255]
+        * theAmount - intensity of lightening to apply [0-255]
+                    defaults to 100
 
     Output
         A value with the 'screen' effect applied to it
@@ -201,8 +200,8 @@ if __name__ == '__main__':
     if myDestinationFilename is None:
         usage()
 
-    lighten(myAmount,
-            mySourceFilename,
+    lighten(mySourceFilename,
             myDestinationFilename,
+            myAmount,
             myFileFormat,
             myQuietFlag)
