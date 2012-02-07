@@ -6,7 +6,7 @@ Created on 07 Feb 2012
 import os
 import unittest
 import numpy
-from gdal_lightener import (lighten, screen)
+from gdal_lightener import (run, screen, darken, lighten)
 
 
 class Test(unittest.TestCase):
@@ -17,13 +17,13 @@ class Test(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testLightner(self):
+    def testRun(self):
         """Test the lightner function works"""
         myRoot = os.path.abspath(os.path.join(os.path.dirname(__file__)))
         myInfile = os.path.join(myRoot, 'test_in.tif')
         myOutfile = os.path.join(myRoot, 'test_out.tif')
         myAmount = 100
-        lighten(myInfile, myOutfile, myAmount)
+        run(myInfile, myOutfile, myAmount)
 
     def testScreen(self):
         """Test the screen function works"""
@@ -32,6 +32,22 @@ class Test(unittest.TestCase):
         myResult = screen(myValue, myAmount)
         print myResult
         assert myResult == 178
+
+    def testDarken(self):
+        """Test the screen function works"""
+        myValue = 127
+        myAmount = 100
+        myResult = darken(myValue, myAmount)
+        myMessage = 'Expected 49, got %s' % myResult
+        assert myResult == 49, myMessage
+
+    def testLighten(self):
+        """Test the lighten function works"""
+        myValue = 127
+        myAmount = 100
+        myResult = lighten(myValue, myAmount)
+        myMessage = 'Expected 177, got %s' % myResult
+        assert myResult == 177, myMessage
 
     def testVectorize(self):
         """Test that screen works as a numpy vecorize function"""

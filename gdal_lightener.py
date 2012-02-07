@@ -23,21 +23,23 @@ import numpy
 
 
 def usage():
-    print('usage: gdal_lightener.py [-q] [-of file_format] -a amount src_color'
-          ' dst_color\n\n'
-          'where\n'
-          'amount is the amount of lightening to apply [0-255]\n'
-          'src_color is a RGB or RGBA dataset\n',
-          'dst_color will be a RGB or RGBA dataset\n'
-          '\n'
-          'Use a lower amount to get a darker image (closer to original)')
+    print('usage: gdal_lightener.py [-q] [-of file_format] -a amount '
+          '-m mode src_color dst_color')
+    print('where')
+    print('amount is the amount of lightening to apply [0-255]')
+    print('mode - darken, lighten or screen')
+    print('src_color is a RGB or RGBA dataset')
+    print('dst_color will be a RGB or RGBA dataset')
+    print('')
+    print('Screen lower amount to get a darker image (closer to original)')
     sys.exit(1)
 
 
-def lighten(theSourceFilename,
+def run(theSourceFilename,
             theDestinationFilename,
             theAmount=100,
             theFileFormat='GTiff',
+            theMode='screen',
             theQuietFlag=False):
     """Function to lighten the pixel intensity of a raster in
     order to give it a 'washed out' appearance.
@@ -48,6 +50,7 @@ def lighten(theSourceFilename,
         * theAmount - intensity of lightening to apply [0-255]
                     Defaults to 100
         * theFileFormat - Output format (defaults to geotiff)
+        * theMode - processing mode - 'screen', 'darken' or 'lighten'
         * theQuietFlag - whether to show progress in terminal
                     Defaults to False
 
@@ -89,8 +92,16 @@ def lighten(theSourceFilename,
 
     # Set up a numpy vectorize function that will iteratively
     # apply the function to each numpy array element
-    myFunction = numpy.vectorize(screen)
-
+    myFunction = None
+    if theMode == 'screen':
+        myFunction = numpy.vectorize(screen)
+    elif theMode == 'darken':
+        myFunction = numpy.vectorize(darken)
+    elif theMode == 'lighten':
+        myFunction = numpy.vectorize(lighten)
+    else:
+        myMessage = 'Unexpected function mode: %s' % theMode
+        raise Exception(myMessage)
     #loop over lines to apply colorshade
     for myRow in range(myYSize):
         #load RGB and colorshade arrays
@@ -143,6 +154,44 @@ def screen(thePixelValue, theAmount=100):
     return(255 - (((255 - theAmount) * (255 - thePixelValue)) / 255))
 
 
+def darken(thePixelValue, theAmount=100):
+    """darken the pixel value by ratio of 255 specified in theAmount
+    Input
+
+        * thePixelValue - a value in the range [0-255]
+        * theAmount - intensity of lightening to apply [0-255]
+                    defaults to 100
+
+    Output
+        A value with the 'darken' effect applied to it
+    Exception
+        none
+    """
+    myRatio = theAmount / 255.0
+    myValue = int(thePixelValue * myRatio)
+    return myValue
+
+
+def lighten(thePixelValue, theAmount=100):
+    """lighten the pixel value by ratio of 255 specified in theAmount
+    Input
+
+        * thePixelValue - a value in the range [0-255]
+        * theAmount - intensity of lightening to apply [0-255]
+                    defaults to 100
+
+    Output
+        A value with the 'darken' effect applied to it
+    Exception
+        none
+    """
+    myRatio = theAmount / 255.0
+    myDifference = 255 - thePixelValue
+    myDifference = int(myDifference * myRatio)
+    thePixelValue += myDifference
+    return thePixelValue
+
+
 if __name__ == '__main__':
     argv = gdal.GeneralCmdLineProcessor(sys.argv)
     if argv is None:
@@ -152,6 +201,7 @@ if __name__ == '__main__':
     mySourceFilename = None
     myDestinationFilename = None
     myAmount = 200  # default
+    myMode = 'screen'
     myQuietFlag = False
 
     # Parse command line arguments.
@@ -163,14 +213,22 @@ if __name__ == '__main__':
             myArgument = myArgument + 1
             myFileFormat = argv[myArgument]
 
-        elif arg == '-q' or arg == '-myQuietFlag':
+        elif arg == '-q' or arg == '-quiet':
             myQuietFlag = True
 
-        if arg == '-a':
+        elif arg == '-a':
             myArgument = myArgument + 1
             myAmount = int(argv[myArgument])
             if myAmount < 0 or myAmount > 255:
                 myMessage = 'invalid range for amount - use [0-255]'
+                print myMessage
+                sys.exit(1)
+
+        elif arg == '-m':
+            myArgument = myArgument + 1
+            myMode = argv[myArgument]
+            if myMode not in ['screen', 'darken', 'lighten']:
+                myMessage = 'invalid mode - use screen or darken'
                 print myMessage
                 sys.exit(1)
 
@@ -186,8 +244,9 @@ if __name__ == '__main__':
     if myDestinationFilename is None:
         usage()
 
-    lighten(mySourceFilename,
+    run(mySourceFilename,
             myDestinationFilename,
             myAmount,
             myFileFormat,
+            myMode,
             myQuietFlag)
