@@ -26,7 +26,7 @@ def usage():
     print('usage: gdal_lightener.py [-q] [-of file_format] -a amount '
           '-m mode src_color dst_color')
     print('where')
-    print('amount is the amount of lightening to apply [0-255]')
+    print('amount is the amount of lightening to apply [0-255] default 180')
     print('mode - darken, lighten or screen')
     print('src_color is a RGB or RGBA dataset')
     print('dst_color will be a RGB or RGBA dataset')
@@ -37,7 +37,7 @@ def usage():
 
 def run(theSourceFilename,
             theDestinationFilename,
-            theAmount=100,
+            theAmount=180,
             theFileFormat='GTiff',
             theMode='screen',
             theQuietFlag=False):
@@ -137,14 +137,14 @@ def run(theSourceFilename,
             gdal.TermProgress_nocb((float(myRow + 1) / myYSize))
 
 
-def screen(thePixelValue, theAmount=100):
+def screen(thePixelValue, theAmount=180):
     """An implementation of the 'screen' image processing procedure.
     .. see:: http://en.wikipedia.org/wiki/Blend_modes#Screen
     Input
 
         * thePixelValue - a value in the range [0-255]
         * theAmount - intensity of lightening to apply [0-255]
-                    defaults to 100
+                    defaults to 180
 
     Output
         A value with the 'screen' effect applied to it
@@ -172,13 +172,13 @@ def darken(thePixelValue, theAmount=100):
     return myValue
 
 
-def lighten(thePixelValue, theAmount=100):
+def lighten(thePixelValue, theAmount=180):
     """lighten the pixel value by ratio of 255 specified in theAmount
     Input
 
         * thePixelValue - a value in the range [0-255]
         * theAmount - intensity of lightening to apply [0-255]
-                    defaults to 100
+                    defaults to 180
 
     Output
         A value with the 'darken' effect applied to it
@@ -200,7 +200,7 @@ if __name__ == '__main__':
     myFileFormat = 'GTiff'
     mySourceFilename = None
     myDestinationFilename = None
-    myAmount = 200  # default
+    myAmount = 180  # default
     myMode = 'screen'
     myQuietFlag = False
 
